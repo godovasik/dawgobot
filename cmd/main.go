@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/godovasik/dawgobot/ai/ollama"
+	"github.com/godovasik/dawgobot/logger"
 	"github.com/godovasik/dawgobot/twitch"
 )
 
@@ -14,7 +15,32 @@ func main() {
 	// testCheckUrl()
 	// testFindUrl()
 
-	testScanForImages()
+	// testScanForImages()
+
+	testGetImageAndDescribe()
+
+}
+
+func testGetImageAndDescribe() {
+	// u := "https://sun9-28.userapi.com/impg/GW4o3NxSl2hOWrKy2UjFtcrTbqMgGa9ijf3o1Q/V4oxBB1zvco.jpg?size=551x1178&quality=95&sign=92db4357f91dbd160db4a3b20ec72da7&type=album"
+	u := "https://previews.123rf.com/images/moovstock/moovstock1803/moovstock180301567/97690294-casino-roulette-wheel-ball-hits-15-fifteen-black-3d-rendering.jpg"
+	ok, err := ollama.CheckUrl(u)
+	if err != nil {
+		logger.Info("cant get url " + u) // this is ugly
+	}
+	if !ok {
+		logger.Info(u + " is not an image")
+	}
+
+	data, err := ollama.GetImage(u)
+	if err != nil {
+		logger.Info("error getting image:" + err.Error())
+	}
+	resp, err := ollama.DescribeImageBytes(data)
+	if err != nil {
+		logger.Info("ollama error:" + err.Error())
+	}
+	fmt.Printf("image url:%s\ndescription: %s\n", u, resp)
 
 }
 

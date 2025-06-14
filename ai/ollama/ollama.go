@@ -41,7 +41,7 @@ func DescribeImageBytes(imageBytes []byte) (string, error) {
 	// Создаем запрос к Ollama
 	request := OllamaRequest{
 		Model:  "llava",
-		Prompt: "Describe what do you see in this image",
+		Prompt: "Describe what you see in this image. Focus on the main elements, setting, and any important details. Be clear and concise.",
 		Images: []string{imageData},
 		Stream: false,
 	}
