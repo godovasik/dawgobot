@@ -14,6 +14,23 @@ func main() {
 	// testCheckUrl()
 	// testFindUrl()
 
+	testScanForImages()
+
+}
+
+func testScanForImages() {
+	client, err := twitch.NewClient()
+	if err != nil {
+		fmt.Println("fuck you")
+	}
+	twitch.ScanForImages(client)
+	client.Join("lesnoybol1")
+	err = client.Connect()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 }
 
 func testFindUrl() {
@@ -38,7 +55,8 @@ func testMonitorChat() {
 		return
 	}
 
-	twitch.MonitorChannelChat(client)
+	username := "forsen"
+	twitch.MonitorChannelChat(client, username)
 }
 func testCheckUrl() {
 	// url := "https://sun9-28.userapi.com/impg/GW4o3NxSl2hOWrKy2UjFtcrTbqMgGa9ijf3o1Q/V4oxBB1zvco.jpg?size=551x1178&quality=95&sign=92db4357f91dbd160db4a3b20ec72da7&type=album"
@@ -52,13 +70,13 @@ func testCheckUrl() {
 	fmt.Println(ok)
 }
 
-func testLlava() {
-	imagePath := "/home/bailey/Downloads/Telegram Desktop/SBKjnxm.jpg"
-	response, err := ollama.DescribeImage(imagePath)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(response.Response, response.TotalDuration)
-
-}
+// func testLlava() {
+// 	imagePath := "/home/bailey/Downloads/Telegram Desktop/SBKjnxm.jpg"
+// 	response, err := ollama.DescribeImage(imagePath)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	fmt.Println(response.Response, response.TotalDuration)
+//
+// }

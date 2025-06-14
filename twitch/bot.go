@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	tw "github.com/gempir/go-twitch-irc/v4"
+	"github.com/godovasik/dawgobot/ai/ollama"
+	"github.com/godovasik/dawgobot/logger"
 )
 
 func NewClient() (*tw.Client, error) {
@@ -19,12 +21,7 @@ func NewClient() (*tw.Client, error) {
 }
 
 // TODO: logger
-func MonitorChannelChat(client *tw.Client) error {
-	if len(os.Args) < 2 {
-		return fmt.Errorf("usage: go run main.go <channel>")
-	}
-
-	username := os.Args[1]
+func MonitorChannelChat(client *tw.Client, username string) error {
 	client.OnPrivateMessage(func(message tw.PrivateMessage) {
 		timenow := message.Time.Format("02-01-06 15:04:05")
 		fmt.Printf("[%v] %s: %s\n", timenow, message.User.DisplayName, message.Message)
@@ -34,6 +31,41 @@ func MonitorChannelChat(client *tw.Client) error {
 	if err := client.Connect(); err != nil {
 		return err
 	}
+	return nil
+}
+
+// TODO: разобраться с пакетами, куда пихат урлы
+func ScanForImages(client *tw.Client) error {
+	client.OnPrivateMessage(func(message tw.PrivateMessage) {
+
+		logger.Info(fmt.Sprintf("%s: %s\n", message.User.DisplayName, message.Message))
+
+		urls := FindURLs(message.Message)
+		for _, u := range urls {
+			ok, err := ollama.CheckUrl(u)
+			if err != nil {
+				logger.Info("cant get url " + u) // this is ugly
+				continue
+			}
+			if !ok {
+				logger.Info(u + " is not an image")
+				continue
+			}
+
+			data, err := ollama.GetImage(u)
+			if err != nil {
+				logger.Info("error getting image:" + err.Error())
+				continue
+			}
+			resp, err := ollama.DescribeImageBytes(data)
+			if err != nil {
+				logger.Info("ollama error:" + err.Error())
+				continue
+			}
+			fmt.Printf("image url:%s\ndescription: %s\n", u, resp)
+
+		}
+	})
 	return nil
 }
 

@@ -104,14 +104,7 @@ func CheckUrl(url string) (bool, error) {
 }
 
 func GetImage(url string) ([]byte, error) {
-	ok, err := CheckUrl(url)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, ErrNotAnImage
-	}
-	
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

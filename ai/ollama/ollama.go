@@ -29,15 +29,10 @@ type OllamaResponse struct {
 
 // DescribeImage принимает путь к изображению и возвращает его описание от LLaVA
 
-func DescribeImage(imagePath string) (*OllamaResponse, error) {
-	imageBytes, err := OpenImage(imagePath)
+func DescribeImageBytes(imageBytes []byte) (string, error) {
+	imageBytes, err := ResizeImageBytes(imageBytes)
 	if err != nil {
-		return nil, err
-	}
-
-	imageBytes, err = ResizeImageBytes(imageBytes)
-	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	imageData := base64.StdEncoding.EncodeToString(imageBytes)
@@ -54,10 +49,10 @@ func DescribeImage(imagePath string) (*OllamaResponse, error) {
 	// Отправляем запрос
 	response, err := sendRequest(request)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при отправке запроса: %w", err)
+		return "", fmt.Errorf("ошибка при отправке запроса: %w", err)
 	}
 
-	return response, nil
+	return response.Response, nil
 }
 
 func sendRequest(req OllamaRequest) (*OllamaResponse, error) {
