@@ -1,10 +1,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"time"
 
+	"github.com/godovasik/dawgobot/ai/deepseek"
 	"github.com/godovasik/dawgobot/ai/ollama"
 	"github.com/godovasik/dawgobot/ai/openrouter"
 	"github.com/godovasik/dawgobot/logger"
@@ -26,38 +25,48 @@ func main() {
 
 	// testMonitorChat()
 
-	testGetResponse()
+	testSimpleDeep()
+
 }
 
-func testGetResponse() {
-	err := openrouter.LoadCharacters()
+func testSimpleDeep() {
+	client, err := deepseek.NewClient()
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
-	client, err := openrouter.GetNewClient()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	messages := `
-[15-06-25 13:11:41] FiSHB0NE__: TriHard
-[15-06-25 13:11:42] ThePositiveBot: [Minigame] AUTOMATIC UNSCRAMBLE! PogChamp The first person to unscramble geremm wins 1 cookie! OpieOP
-[15-06-25 13:12:49] zyrwoot: Aware forsen was on epstein island
-[15-06-25 13:13:13] djfors_: docJAM now playing: Top 10 Best Restaurants to Visit in Limassol | Cyp[...]
-[15-06-25 13:13:43] TwoLetterName: Aware
-[15-06-25 13:13:54] THIZZBOX707: Aware
-`
-
-	resp, err := openrouter.GenerateResponse(ctx, client, "TwitchChatter", messages)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(resp)
+	deepseek.GetResponse(client)
 }
+
+// func testGetResponse() {
+// 	err := openrouter.LoadCharacters()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	client, err := openrouter.GetNewClient()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+// 	defer cancel()
+// 	messages := `
+// [15-06-25 13:11:41] FiSHB0NE__: TriHard
+// [15-06-25 13:11:42] ThePositiveBot: [Minigame] AUTOMATIC UNSCRAMBLE! PogChamp The first person to unscramble geremm wins 1 cookie! OpieOP
+// [15-06-25 13:12:49] zyrwoot: Aware forsen was on epstein island
+// [15-06-25 13:13:13] djfors_: docJAM now playing: Top 10 Best Restaurants to Visit in Limassol | Cyp[...]
+// [15-06-25 13:13:43] TwoLetterName: Aware
+// [15-06-25 13:13:54] THIZZBOX707: Aware
+// `
+//
+// 	// resp, err := openrouter.GenerateResponse(ctx, client, "TwitchChatter", messages)
+// 	resp, err := deepseek.GenerateResponse(ctx, client, "TwitchChatter", messages)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	fmt.Println(resp)
+// }
 
 func testLoadCharacters() {
 	openrouter.LoadCharacters()
