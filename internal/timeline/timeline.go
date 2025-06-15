@@ -27,6 +27,7 @@ package timeline
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -220,4 +221,12 @@ func NewEventMock() func() Event {
 	}
 }
 
-func PrintTime
+// TODO: доделать
+func SprintEvents(events []Event) string {
+	sb := strings.Builder{}
+	for _, e := range events {
+		sb.WriteString(fmt.Sprintf("%s: %s\n", e.Author, e.Content))
+
+	}
+	return sb.String()
+}

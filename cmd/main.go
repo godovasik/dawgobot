@@ -37,28 +37,52 @@ func main() {
 
 func testMonitorAndTimeline() {
 	tl := timeline.NewTimeline(100)
+	defer tl.Stop()
+
 	tw, err := twitch.NewClient(tl)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	ds, err := deepseek.NewClient(tl)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = deepseek.LoadCharacters()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	tw.MonitorChannelChat("timour_j")
 
 	go func() { //yourself
-		ticker := time.NewTicker(10 * time.Second)
+		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				events := tl.GetRecentEvents(10 * time.Second)
-				fmt.Println("new events:", len(events))
-				for _, e := range events {
-					fmt.Printf("%s: %s\n", e.Author, e.Content)
+				events := tl.GetRecentEvents(30 * time.Second)
+				if len(events) == 0 {
+					logger.Info("no new events, skip")
+				} else {
+					logger.Infof("new events:%d", len(events))
+					logger.Infof("Отправляем:%s", timeline.SprintEvents(events))
+
+					resp, err := ds.GetResponse("dawgobot", timeline.SprintEvents(events))
+					if err != nil {
+						logger.Info(err.Error())
+					}
+					fmt.Println("from deepseek:", resp)
 				}
 			}
 		}
 
 	}()
+
 	if err := tw.TwitchClient.Connect(); err != nil {
 		fmt.Println(err)
 		return
@@ -88,32 +112,32 @@ func testTimeline() {
 
 }
 
-func testSimpleDeep() {
-	client, err := deepseek.NewClient()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	err = deepseek.LoadCharacters()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	messages := `
-// [15-06-25 13:11:41] FiSHB0NE__: TriHard
-// [15-06-25 13:11:42] ThePositiveBot: [Minigame] AUTOMATIC UNSCRAMBLE! PogChamp The first person to unscramble geremm wins 1 cookie! OpieOP
-// [15-06-25 13:12:49] zyrwoot: Aware forsen was on epstein island
-// [15-06-25 13:13:13] djfors_: docJAM now playing: Top 10 Best Restaurants to Visit in Limassol | Cyp[...]
-// [15-06-25 13:13:43] TwoLetterName: Aware
-// [15-06-25 13:13:54] THIZZBOX707: Aware
-// `
-	err = deepseek.GetResponse(client, "dawgobot", messages)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-}
+// func testSimpleDeep() {
+// 	client, err := deepseek.NewClient()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	err = deepseek.LoadCharacters()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	messages := `
+// // [15-06-25 13:11:41] FiSHB0NE__: TriHard
+// // [15-06-25 13:11:42] ThePositiveBot: [Minigame] AUTOMATIC UNSCRAMBLE! PogChamp The first person to unscramble geremm wins 1 cookie! OpieOP
+// // [15-06-25 13:12:49] zyrwoot: Aware forsen was on epstein island
+// // [15-06-25 13:13:13] djfors_: docJAM now playing: Top 10 Best Restaurants to Visit in Limassol | Cyp[...]
+// // [15-06-25 13:13:43] TwoLetterName: Aware
+// // [15-06-25 13:13:54] THIZZBOX707: Aware
+// // `
+// 	err = deepseek.GetResponse(client, "dawgobot", messages)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// }
 
 func testLoadCharacters() {
 	openrouter.LoadCharacters()
