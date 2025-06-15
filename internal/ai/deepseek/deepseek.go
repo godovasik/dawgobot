@@ -26,7 +26,7 @@ type Client struct {
 
 func LoadCharacters() error {
 	// Читаем YAML файл
-	data, err := os.ReadFile("internal/ai/openrouter/prompts.yaml")
+	data, err := os.ReadFile("internal/ai/prompts.yaml")
 	if err != nil {
 		return fmt.Errorf("cant read file: %w", err)
 	}
@@ -80,11 +80,14 @@ func (c *Client) GetResponse(character, message string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
+	logger.Info("оптравляем запрос дипсику...")
+	start := time.Now()
 	resp, err := c.OpenaiCli.CreateChatCompletion(ctx, req)
 	if err != nil {
 		return "", fmt.Errorf("Ошибка при отправке запроса: %v", err)
 
 	}
 
+	logger.Infof("реквест занял времяни: %v", time.Since(start))
 	return fmt.Sprint(resp.Choices[0].Message.Content), nil
 }

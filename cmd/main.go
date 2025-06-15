@@ -57,7 +57,7 @@ func testMonitorAndTimeline() {
 		return
 	}
 
-	tw.MonitorChannelChat("forsen")
+	tw.MonitorChannelChat("timour_j")
 
 	go func() { //yourself
 		ticker := time.NewTicker(15 * time.Second)
