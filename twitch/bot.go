@@ -3,8 +3,11 @@ package twitch
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
+	"time"
 
 	tw "github.com/gempir/go-twitch-irc/v4"
 	"github.com/godovasik/dawgobot/ai/ollama"
@@ -22,9 +25,36 @@ func NewClient() (*tw.Client, error) {
 
 // TODO: logger
 func MonitorChannelChat(client *tw.Client, username string) error {
+	filename := fmt.Sprintf("logger/chatLogs/%s.txt", username)
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	timenow := time.Now().Format("02-01-06 15:04:05")
+	file.WriteString(fmt.Sprintf("[%v] Starting monitoring channel \"%s\"\n", timenow, username))
+
+	defer file.WriteString(fmt.Sprintf(
+		"[%v] Stopping monitoring channel \"%s\"\n\n", time.Now().Format("02-01-06 15:04:05"), username),
+	)
+
+	// Обработка Ctrl+C
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-c
+		file.WriteString(fmt.Sprintf("[%v] Stopping monitoring channel \"%s\"\n\n",
+			time.Now().Format("02-01-06 15:04:05"), username))
+		file.Close()
+		os.Exit(0)
+	}()
+
 	client.OnPrivateMessage(func(message tw.PrivateMessage) {
 		timenow := message.Time.Format("02-01-06 15:04:05")
 		fmt.Printf("[%v] %s: %s\n", timenow, message.User.DisplayName, message.Message)
+		file.WriteString(fmt.Sprintf("[%v] %s: %s\n", timenow, message.User.DisplayName, message.Message))
 	})
 
 	client.Join(username)
@@ -34,10 +64,8 @@ func MonitorChannelChat(client *tw.Client, username string) error {
 	return nil
 }
 
-// TODO: разобраться с пакетами, куда пихат урлы
-func ScanForImages(client *tw.Client) error {
-	client.OnPrivateMessage(func(message tw.PrivateMessage) {
-
+func ScanForImagesHandler() func(message tw.PrivateMessage) {
+	return func(message tw.PrivateMessage) {
 		logger.Info(fmt.Sprintf("%s: %s\n", message.User.DisplayName, message.Message))
 
 		urls := FindURLs(message.Message)
@@ -65,8 +93,7 @@ func ScanForImages(client *tw.Client) error {
 			fmt.Printf("image url:%s\ndescription: %s\n", u, resp)
 
 		}
-	})
-	return nil
+	}
 }
 
 func FindURLs(text string) []string {
