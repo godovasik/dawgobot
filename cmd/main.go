@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/godovasik/dawgobot/ai/deepseek"
-	"github.com/godovasik/dawgobot/ai/ollama"
-	"github.com/godovasik/dawgobot/ai/openrouter"
+	"github.com/godovasik/dawgobot/internal/ai/deepseek"
+	"github.com/godovasik/dawgobot/internal/ai/ollama"
+	"github.com/godovasik/dawgobot/internal/ai/openrouter"
+	"github.com/godovasik/dawgobot/internal/timeline"
+	"github.com/godovasik/dawgobot/internal/twitch"
 	"github.com/godovasik/dawgobot/logger"
-	"github.com/godovasik/dawgobot/twitch"
 )
 
 func main() {
@@ -16,41 +18,58 @@ func main() {
 	// testMonitorChat()
 	// testCheckUrl()
 	// testFindUrl()
-
 	// testScanForImages()
-
 	// testGetImageAndDescribe()
-
 	// testLoadCharacters()
-
 	// testMonitorChat()
+	// testSimpleDeep()
+	// testTimeline()
+	// testMockEvent()
+	// testBasicTimeline()
+	// testBufferOverflow()
+	// testGetLastEvents()
+	// testDifferentEventTypes()
+	// testChannelStress()
+	// testGetRecentEvents()
 
-	testSimpleDeep()
+}
+
+func testMockEvent() {
+	mock := timeline.NewEventMock()
+	fmt.Println(mock())
+	fmt.Println(mock())
+	fmt.Println(mock())
+}
+
+func testTimeline() {
+	tl := timeline.NewTimeline(3)
+	mock := timeline.NewEventMock()
+
+	tl.AddEvent(mock())
+	tl.AddEvent(mock())
+	tl.AddEvent(mock())
+	time.Sleep(1 * time.Second)
+
+	events := tl.GetAllEvents()
+	for _, e := range events {
+		fmt.Println(e.Content)
+	}
 
 }
 
 func testSimpleDeep() {
 	client, err := deepseek.NewClient()
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	deepseek.GetResponse(client)
-}
 
-// func testGetResponse() {
-// 	err := openrouter.LoadCharacters()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-// 	client, err := openrouter.GetNewClient()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-// 	defer cancel()
-// 	messages := `
+	err = deepseek.LoadCharacters()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	messages := `
 // [15-06-25 13:11:41] FiSHB0NE__: TriHard
 // [15-06-25 13:11:42] ThePositiveBot: [Minigame] AUTOMATIC UNSCRAMBLE! PogChamp The first person to unscramble geremm wins 1 cookie! OpieOP
 // [15-06-25 13:12:49] zyrwoot: Aware forsen was on epstein island
@@ -58,15 +77,12 @@ func testSimpleDeep() {
 // [15-06-25 13:13:43] TwoLetterName: Aware
 // [15-06-25 13:13:54] THIZZBOX707: Aware
 // `
-//
-// 	// resp, err := openrouter.GenerateResponse(ctx, client, "TwitchChatter", messages)
-// 	resp, err := deepseek.GenerateResponse(ctx, client, "TwitchChatter", messages)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-// 	fmt.Println(resp)
-// }
+	err = deepseek.GetResponse(client, "dawgobot", messages)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
 
 func testLoadCharacters() {
 	openrouter.LoadCharacters()

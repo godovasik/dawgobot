@@ -3,6 +3,7 @@ package deepseek
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"os"
 
@@ -19,7 +20,7 @@ type CharactersConfig struct {
 
 func LoadCharacters() error {
 	// Читаем YAML файл
-	data, err := os.ReadFile("ai/openrouter/prompts.yaml")
+	data, err := os.ReadFile("internal/ai/openrouter/prompts.yaml")
 	if err != nil {
 		return fmt.Errorf("cant read file: %w", err)
 	}
@@ -51,23 +52,36 @@ func NewClient() (*openai.Client, error) {
 	return client, nil
 }
 
-func GetResponse(client *openai.Client) {
+func GetResponse(client *openai.Client, character, message string) error {
+	prompt, ok := Characters[character]
+	if !ok {
+		return fmt.Errorf("no such character")
+	}
 	req := openai.ChatCompletionRequest{
 		Model: "deepseek-chat",
 		Messages: []openai.ChatCompletionMessage{
 			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: prompt,
+			},
+			{
 				Role:    openai.ChatMessageRoleUser,
-				Content: "Привет! Как дела?",
+				Content: message,
 			},
 		},
 	}
 
-	resp, err := client.CreateChatCompletion(context.Background(), req)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
+	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		logger.Errorf("Ошибка при отправке запроса: %v", err)
+		return fmt.Errorf("Ошибка при отправке запроса: %v", err)
+
 	}
 
 	// Выводим ответ
 	fmt.Println("Ответ от DeepSeek:")
 	fmt.Println(resp.Choices[0].Message.Content)
+	return nil
 }

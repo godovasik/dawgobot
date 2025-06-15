@@ -10,7 +10,7 @@ import (
 	"time"
 
 	tw "github.com/gempir/go-twitch-irc/v4"
-	"github.com/godovasik/dawgobot/ai/ollama"
+	"github.com/godovasik/dawgobot/internal/ai/ollama"
 	"github.com/godovasik/dawgobot/logger"
 )
 
