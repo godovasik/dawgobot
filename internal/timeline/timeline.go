@@ -4,9 +4,11 @@ package timeline
 // я не уверен что она мне вообще подходит, но для начала пойдет
 // кароче да, он даже в оригинальной версии неправильно работает, буду переделывать
 // UPD: все норм, теперь вроде работает
+// кстати, timestamp можно ставить любой, тоесть так можно реализоввыать задержку, но это уже другая история.
 
 // TODO: кейс с переполнением канала
 // почему небуферезированнй канал?
+// добавить Flush для закрытия
 //
 // как использовать:
 //
@@ -35,7 +37,8 @@ import (
 type EventType int
 
 const (
-	EventChat EventType = iota
+	EventBot EventType = iota
+	EventChat
 	EventSpeech
 	EventScreenshot
 )
@@ -167,7 +170,7 @@ func (tl *Timeline) AddEvent(event Event) {
 
 	select {
 	case tl.eventChan <- event:
-		logger.Infof("added event:%s", event.Content)
+		// logger.Infof("added event:%s", event.Content)
 		// Событие добавлено
 	default:
 		logger.Errorf("cant write event %s: channel is full", event.Content)
@@ -216,3 +219,5 @@ func NewEventMock() func() Event {
 		}
 	}
 }
+
+func PrintTime

@@ -32,6 +32,37 @@ func main() {
 	// testChannelStress()
 	// testGetRecentEvents()
 
+	testMonitorAndTimeline()
+}
+
+func testMonitorAndTimeline() {
+	tl := timeline.NewTimeline(100)
+	tw, err := twitch.NewClient(tl)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	tw.MonitorChannelChat("timour_j")
+
+	go func() { //yourself
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				events := tl.GetRecentEvents(10 * time.Second)
+				fmt.Println("new events:", len(events))
+				for _, e := range events {
+					fmt.Printf("%s: %s\n", e.Author, e.Content)
+				}
+			}
+		}
+
+	}()
+	if err := tw.TwitchClient.Connect(); err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
 func testMockEvent() {
@@ -111,20 +142,20 @@ func testGetImageAndDescribe() {
 
 }
 
-func testScanForImages() {
-	client, err := twitch.NewClient()
-	if err != nil {
-		fmt.Println("fuck you")
-	}
-	client.OnPrivateMessage(twitch.ScanForImagesHandler())
-	client.Join("lesnoybol1")
-	err = client.Connect()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-}
+// func testScanForImages() {
+// 	client, err := twitch.NewClient()
+// 	if err != nil {
+// 		fmt.Println("fuck you")
+// 	}
+// 	client.OnPrivateMessage(twitch.ScanForImagesHandler())
+// 	client.Join("lesnoybol1")
+// 	err = client.Connect()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// }
 
 func testFindUrl() {
 	texts := []string{
@@ -141,16 +172,17 @@ func testFindUrl() {
 	fmt.Println(urls)
 }
 
-func testMonitorChat() {
-	client, err := twitch.NewClient()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+// func testMonitorChat() {
+// 	client, err := twitch.NewClient()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	username := "forsen"
+// 	twitch.MonitorChannelChat(client, username)
+// }
 
-	username := "forsen"
-	twitch.MonitorChannelChat(client, username)
-}
 func testCheckUrl() {
 	// url := "https://sun9-28.userapi.com/impg/GW4o3NxSl2hOWrKy2UjFtcrTbqMgGa9ijf3o1Q/V4oxBB1zvco.jpg?size=551x1178&quality=95&sign=92db4357f91dbd160db4a3b20ec72da7&type=album"
 	url2 := "google.com"
