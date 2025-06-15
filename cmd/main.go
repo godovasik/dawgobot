@@ -57,7 +57,7 @@ func testMonitorAndTimeline() {
 		return
 	}
 
-	tw.MonitorChannelChat("timour_j")
+	tw.MonitorChannelChat("forsen")
 
 	go func() { //yourself
 		ticker := time.NewTicker(15 * time.Second)
@@ -65,12 +65,13 @@ func testMonitorAndTimeline() {
 		for {
 			select {
 			case <-ticker.C:
-				events := tl.GetRecentEvents(30 * time.Second)
+				events := tl.GetRecentEvents(60 * time.Second)
 				if len(events) == 0 {
 					logger.Info("no new events, skip")
 				} else {
 					logger.Infof("new events:%d", len(events))
 					logger.Infof("Отправляем:%s", timeline.SprintEvents(events))
+					logger.Info("ждем ответ дипсика...")
 
 					resp, err := ds.GetResponse("dawgobot", timeline.SprintEvents(events))
 					if err != nil {
