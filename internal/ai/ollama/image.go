@@ -89,6 +89,7 @@ func ResizeImageBytes(imageBytes []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// checks if provided url contains an image
 func CheckUrl(url string) (bool, error) {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "https://" + url

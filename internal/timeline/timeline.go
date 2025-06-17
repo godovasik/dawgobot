@@ -38,7 +38,7 @@ import (
 type EventType int
 
 const (
-	EventBot EventType = iota
+	EventGlobal EventType = iota
 	EventChat
 	EventSpeech
 	EventScreenshot
@@ -46,10 +46,11 @@ const (
 
 // Структура события
 type Event struct {
-	Type      EventType `json:"type"`
-	Content   string    `json:"content"`
-	Author    string    `json:"author,omitempty"` // для чата
-	Timestamp time.Time `json:"timestamp"`
+	Type      EventType
+	Content   string
+	Author    string // для чата
+	Streamer  string
+	Timestamp time.Time
 }
 
 // Циркулярный буфер
@@ -214,9 +215,11 @@ func NewEventMock() func() Event {
 	return func() Event {
 		i++
 		return Event{
-			Type:    EventChat,
-			Content: fmt.Sprintf("%d", i),
-			Author:  fmt.Sprintf("user_%d", i),
+			Type:      EventChat,
+			Content:   fmt.Sprintf("%d", i),
+			Author:    fmt.Sprintf("user_%d", i),
+			Streamer:  "forsen",
+			Timestamp: time.Now(),
 		}
 	}
 }
@@ -229,4 +232,14 @@ func SprintEvents(events []Event) string {
 
 	}
 	return sb.String()
+}
+
+func PrintEvents(events []Event) {
+	sb := strings.Builder{}
+	for _, e := range events {
+		sb.WriteString(fmt.Sprintf("%s: %s\n", e.Author, e.Content))
+
+	}
+	fmt.Println(sb.String())
+	return
 }

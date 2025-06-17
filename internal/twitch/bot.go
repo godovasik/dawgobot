@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tw "github.com/gempir/go-twitch-irc/v4"
+	"github.com/godovasik/dawgobot/internal/ai/deepseek"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
 	"github.com/godovasik/dawgobot/internal/timeline"
 	"github.com/godovasik/dawgobot/logger"
@@ -37,6 +38,73 @@ func NewTwitchClient() (*tw.Client, error) {
 	return client, nil
 }
 
+// TODO:
+// сейчас я вызываю тут запросы к дипсику и оламе, по хорошему это нужно делать где-то вне.
+// как начнут проблемы вылазить - переделаю
+func (c *Client) ReactToImages(username string) error {
+	c.TwitchClient.OnPrivateMessage(func(message tw.PrivateMessage) {
+		urls := FindURLs(message.Message)
+		if len(urls) == 0 {
+			return
+		}
+		Iurls := []string{}
+		for _, u := range urls {
+			ok, err := ollama.CheckUrl(u)
+			if err != nil {
+				logger.Errorf("error fetching url: %s", u)
+				continue
+			}
+			if ok {
+				Iurls = append(Iurls, u)
+				logger.Infof("this is image: %s", u)
+
+			}
+		}
+
+		descriptions := ""
+		for i, u := range Iurls {
+			logger.Info("fetching image...")
+			img, err := ollama.GetImage(u)
+			if err != nil {
+				logger.Errorf("error getting image: %s", u)
+				continue
+			}
+			logger.Info("sending image to llava...")
+			resp, err := ollama.DescribeImageBytes(img)
+			if err != nil {
+				logger.Errorf("cant describe image: %w", err)
+				continue
+			}
+			logger.Infof("we got description from llava:")
+			logger.Info(resp)
+			descriptions += fmt.Sprintf("\nОписание %d'й картинки:\n%s\n", i, resp)
+		}
+
+		fmt.Println("full description:", descriptions)
+
+		// тут ненадо инициализиворать дипсак, но мне похуй пока что
+
+		if descriptions == "" {
+			return
+		}
+		ds, err := deepseek.NewClient(nil)
+		if err != nil {
+			logger.Errorf("мне похуй бля %w", err)
+		}
+		resp, err := ds.GetResponse("image", descriptions)
+		if err != nil {
+			logger.Errorf("я заибался их чекать бля %w", err)
+		}
+		fmt.Println("вот шо получилось:")
+		fmt.Println(resp)
+	})
+
+	logger.Infof("подключились к %s", username)
+	c.TwitchClient.Join(username)
+
+	return nil
+}
+
 // пишет в таймлайн содержимое чата
 // надо будет убрать отсюда запись в файл, это будет делать метод таймлайна.
 func (c *Client) MonitorChannelChat(username string) error {
@@ -55,7 +123,7 @@ func (c *Client) MonitorChannelChat(username string) error {
 	)
 
 	event := timeline.Event{
-		Type:      timeline.EventBot,
+		Type:      timeline.EventGlobal,
 		Content:   fmt.Sprintf("Starting monitoring channel \"%s\"", username),
 		Author:    "[botInfo]", // TODO: придумать более красивое решение
 		Timestamp: time.Now(),

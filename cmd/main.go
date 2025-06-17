@@ -2,39 +2,93 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/godovasik/dawgobot/internal/ai/deepseek"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
 	"github.com/godovasik/dawgobot/internal/ai/openrouter"
+	database "github.com/godovasik/dawgobot/internal/db"
 	"github.com/godovasik/dawgobot/internal/timeline"
 	"github.com/godovasik/dawgobot/internal/twitch"
 	"github.com/godovasik/dawgobot/logger"
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("no argument here...")
+		// testLlava()
+		// testMonitorChat()
+		// testCheckUrl()
+		// testFindUrl()
+		// testScanForImages()
+		// testGetImageAndDescribe()
+		// testLoadCharacters()
+		// testMonitorChat()
+		// testSimpleDeep()
+		// testTimeline()
+		// testMockEvent()
+		// testBasicTimeline()
+		// testBufferOverflow()
+		// testGetLastEvents()
+		// testDifferentEventTypes()
+		// testChannelStress()
+		// testGetRecentEvents()
 
-	// testLlava()
-	// testMonitorChat()
-	// testCheckUrl()
-	// testFindUrl()
-	// testScanForImages()
-	// testGetImageAndDescribe()
-	// testLoadCharacters()
-	// testMonitorChat()
-	// testSimpleDeep()
-	// testTimeline()
-	// testMockEvent()
-	// testBasicTimeline()
-	// testBufferOverflow()
-	// testGetLastEvents()
-	// testDifferentEventTypes()
-	// testChannelStress()
-	// testGetRecentEvents()
+		// testMonitorAndTimeline()
+		//
 
-	testMonitorAndTimeline()
+		// testSqlite()
+		return
+	}
+	switch os.Args[1] {
+	case "log":
+		fmt.Println("kek")
+	case "img":
+		ReactToImages()
+	}
+
 }
 
+func ReactToImages() {
+	deepseek.LoadCharacters()
+	tc, err := twitch.NewClient(nil)
+	err = tc.ReactToImages("lesnoybol1")
+	err = tc.TwitchClient.Connect()
+	fmt.Println("ХУЙ:", err)
+
+}
+
+func testSqlite() {
+	db, err := database.New("internal/db/db.sqlite")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer db.Close()
+	events := []timeline.Event{}
+	mock := timeline.NewEventMock()
+	events = append(events, mock())
+	events = append(events, mock())
+	events = append(events, mock())
+
+	// db.AddEvents(events)
+	three, err := db.GetEventsByCount("forsen", 3)
+	one, err := db.GetEventsByCount("forsen", 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	timeline.PrintEvents(one)
+	timeline.PrintEvents(three)
+
+	all, err := db.GetEventsByCount("forsen", 100)
+	timeline.PrintEvents(all)
+}
+
+// эта функция мониторит твич чат, и раз в 15 секунд отправляет сообщение
+// с учетом предыдущих, за 60 секунд.
+// TODO: отслеживать чат дольше, мб отслеживать конкретный диалог с тем, кого тегнули, но это уже потом
 func testMonitorAndTimeline() {
 	tl := timeline.NewTimeline(100)
 	defer tl.Stop()
@@ -57,7 +111,7 @@ func testMonitorAndTimeline() {
 		return
 	}
 
-	tw.MonitorChannelChat("timour_j")
+	tw.MonitorChannelChat("thijs")
 
 	go func() { //yourself
 		ticker := time.NewTicker(15 * time.Second)

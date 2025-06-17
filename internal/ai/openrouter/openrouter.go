@@ -21,7 +21,7 @@ type CharactersConfig struct {
 
 func LoadCharacters() error {
 	// Читаем YAML файл
-	data, err := os.ReadFile("ai/openrouter/prompts.yaml")
+	data, err := os.ReadFile("ai/prompts.yaml")
 	if err != nil {
 		return fmt.Errorf("cant read file: %w", err)
 	}
