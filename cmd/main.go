@@ -65,6 +65,7 @@ func main() {
 			"ipoch0__0",
 			"timour_j",
 			"pixel_bot_o_0",
+			"lesnoybol1",
 		}
 		if len(os.Args) >= 3 {
 			boys = boys[:0]
