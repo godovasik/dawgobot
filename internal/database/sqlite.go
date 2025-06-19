@@ -27,7 +27,8 @@ type DB struct {
 	conn *sql.DB
 }
 
-func New(dbPath string) (*DB, error) {
+func New() (*DB, error) {
+	dbPath := "internal/database/db.sqlite"
 	conn, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
 	if err != nil {
 		return nil, err

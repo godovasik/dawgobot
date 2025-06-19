@@ -5,10 +5,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/godovasik/dawgobot/internal/ai/deepseek"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
 	"github.com/godovasik/dawgobot/internal/ai/openrouter"
-	database "github.com/godovasik/dawgobot/internal/db"
+	"github.com/godovasik/dawgobot/internal/client"
+	database "github.com/godovasik/dawgobot/internal/database"
 	"github.com/godovasik/dawgobot/internal/timeline"
 	"github.com/godovasik/dawgobot/internal/twitch"
 	"github.com/godovasik/dawgobot/logger"
@@ -39,28 +39,108 @@ func main() {
 		//
 
 		// testSqlite()
+		// testMonitorChatEvents()
 		return
 	}
 	switch os.Args[1] {
 	case "log":
 		fmt.Println("kek")
 	case "img":
-		ReactToImages()
+		// ReactToImages()
+	case "last":
+		streamer := ""
+		if len(os.Args) >= 3 {
+			streamer = os.Args[2]
+			fmt.Printf("last events for %s:\n", streamer)
+			testGetEvents(streamer)
+		} else {
+			fmt.Println("last events for ALL:")
+			testGetAllEvents()
+		}
+	case "monitor":
+		boys := []string{
+			"dawgonosik",
+			"hak3li",
+			"mightypoot",
+			"ipoch0__0",
+			"timour_j",
+			"pixel_bot_o_0",
+		}
+		if len(os.Args) >= 3 {
+			boys = boys[:0]
+			boys[0] = os.Args[2]
+		}
+		fmt.Println("monitoring chat for", boys)
+		testMonitorChatEvents(boys...)
 	}
 
 }
 
-func ReactToImages() {
-	deepseek.LoadCharacters()
-	tc, err := twitch.NewClient(nil)
-	err = tc.ReactToImages("lesnoybol1")
-	err = tc.TwitchClient.Connect()
-	fmt.Println("ХУЙ:", err)
-
+func testGetAllEvents() {
+	db, err := database.New()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	events, err := db.GetAllEventsByCount(15)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(len(events))
+	timeline.PrintEvents(events)
 }
 
+func testGetEvents(streamer string) {
+	db, err := database.New()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	events, err := db.GetEventsByCount(streamer, 15)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(len(events))
+	timeline.PrintEvents(events)
+}
+
+func testMonitorChatEvents(channels ...string) {
+	tw, err := twitch.NewClient()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db, err := database.New()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	client := client.NewClientBuilder().
+		WithDB(db).
+		WithTwitch(tw).
+		Build()
+
+	err = client.MonitorChatEvents(channels...)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	client.TWClient.TWClient.Connect()
+}
+
+// func ReactToImages() {
+// 	deepseek.LoadCharacters()
+// 	tc, err := twitch.NewClient(nil)
+// 	err = tc.ReactToImages("lesnoybol1")
+// 	err = tc.TWClient.Connect()
+// 	fmt.Println("ХУЙ:", err)
+//
+// }
+
 func testSqlite() {
-	db, err := database.New("internal/db/db.sqlite")
+	db, err := database.New()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -89,60 +169,60 @@ func testSqlite() {
 // эта функция мониторит твич чат, и раз в 15 секунд отправляет сообщение
 // с учетом предыдущих, за 60 секунд.
 // TODO: отслеживать чат дольше, мб отслеживать конкретный диалог с тем, кого тегнули, но это уже потом
-func testMonitorAndTimeline() {
-	tl := timeline.NewTimeline(100)
-	defer tl.Stop()
-
-	tw, err := twitch.NewClient(tl)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	ds, err := deepseek.NewClient(tl)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	err = deepseek.LoadCharacters()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	tw.MonitorChannelChat("thijs")
-
-	go func() { //yourself
-		ticker := time.NewTicker(15 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				events := tl.GetRecentEvents(60 * time.Second)
-				if len(events) == 0 {
-					logger.Info("no new events, skip")
-				} else {
-					logger.Infof("new events:%d", len(events))
-					logger.Infof("Отправляем:%s", timeline.SprintEvents(events))
-					logger.Info("ждем ответ дипсика...")
-
-					resp, err := ds.GetResponse("dawgobot", timeline.SprintEvents(events))
-					if err != nil {
-						logger.Info(err.Error())
-					}
-					fmt.Println("from deepseek:", resp)
-				}
-			}
-		}
-
-	}()
-
-	if err := tw.TwitchClient.Connect(); err != nil {
-		fmt.Println(err)
-		return
-	}
-}
+// func testMonitorAndTimeline() {
+// 	tl := timeline.NewTimeline(100)
+// 	defer tl.Stop()
+//
+// 	tw, err := twitch.NewClient(tl)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	ds, err := deepseek.NewClient(tl)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	err = deepseek.LoadCharacters()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	tw.MonitorChannelChat("thijs")
+//
+// 	go func() { //yourself
+// 		ticker := time.NewTicker(15 * time.Second)
+// 		defer ticker.Stop()
+// 		for {
+// 			select {
+// 			case <-ticker.C:
+// 				events := tl.GetRecentEvents(60 * time.Second)
+// 				if len(events) == 0 {
+// 					logger.Info("no new events, skip")
+// 				} else {
+// 					logger.Infof("new events:%d", len(events))
+// 					logger.Infof("Отправляем:%s", timeline.SprintEvents(events))
+// 					logger.Info("ждем ответ дипсика...")
+//
+// 					resp, err := ds.GetResponse("dawgobot", timeline.SprintEvents(events))
+// 					if err != nil {
+// 						logger.Info(err.Error())
+// 					}
+// 					fmt.Println("from deepseek:", resp)
+// 				}
+// 			}
+// 		}
+//
+// 	}()
+//
+// 	if err := tw.TWClient.Connect(); err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// }
 
 func testMockEvent() {
 	mock := timeline.NewEventMock()

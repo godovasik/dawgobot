@@ -82,6 +82,50 @@ func (db *DB) GetEventsByTimeRange(streamerName string, from, to time.Time) ([]t
 
 	return events, rows.Err()
 }
+func (db *DB) GetAllEventsByCount(count int) ([]timeline.Event, error) {
+	query := `
+		SELECT author, event_type, content, streamer_name, timestamp 
+		FROM timeline 
+		ORDER BY timestamp DESC 
+		LIMIT ?`
+
+	rows, err := db.conn.Query(query, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []timeline.Event
+	for rows.Next() {
+		var event timeline.Event
+		var author sql.NullString
+		var streamerName sql.NullString
+		var eventType int
+
+		err := rows.Scan(&author, &eventType, &event.Content, &streamerName, &event.Timestamp)
+		if err != nil {
+			return nil, err
+		}
+
+		event.Type = timeline.EventType(eventType)
+		if author.Valid {
+			event.Author = author.String
+		}
+
+		if streamerName.Valid {
+			event.Streamer = streamerName.String
+		}
+
+		events = append(events, event)
+	}
+
+	// Разворачиваем массив, чтобы события шли в хронологическом порядке
+	for i := range len(events) / 2 {
+		events[i], events[len(events)-1-i] = events[len(events)-1-i], events[i]
+	}
+
+	return events, rows.Err()
+}
 
 // GetEventsByCount возвращает последние N событий стримера
 func (db *DB) GetEventsByCount(streamerName string, count int) ([]timeline.Event, error) {

@@ -237,7 +237,7 @@ func SprintEvents(events []Event) string {
 func PrintEvents(events []Event) {
 	sb := strings.Builder{}
 	for _, e := range events {
-		sb.WriteString(fmt.Sprintf("%s: %s\n", e.Author, e.Content))
+		sb.WriteString(fmt.Sprintf("[%s] %s: %s\n", e.Streamer, e.Author, e.Content))
 
 	}
 	fmt.Println(sb.String())

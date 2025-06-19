@@ -7,7 +7,6 @@ import (
 
 	"os"
 
-	"github.com/godovasik/dawgobot/internal/timeline"
 	"github.com/godovasik/dawgobot/logger"
 	"github.com/sashabaranov/go-openai"
 	"gopkg.in/yaml.v3"
@@ -21,7 +20,6 @@ type CharactersConfig struct {
 
 type Client struct {
 	OpenaiCli *openai.Client
-	Tl        *timeline.Timeline
 }
 
 func LoadCharacters() error {
@@ -45,7 +43,7 @@ func LoadCharacters() error {
 	return nil
 }
 
-func NewClient(tl *timeline.Timeline) (*Client, error) {
+func NewClient() (*Client, error) {
 	apiKey := os.Getenv("DEEPSEEK_TOKEN")
 	if apiKey == "" {
 		return nil, fmt.Errorf("DEEPSEEK_TOKEN not set")
@@ -55,7 +53,7 @@ func NewClient(tl *timeline.Timeline) (*Client, error) {
 	config := openai.DefaultConfig(apiKey)
 	config.BaseURL = "https://api.deepseek.com"
 	openaiCli := openai.NewClientWithConfig(config)
-	return &Client{OpenaiCli: openaiCli, Tl: tl}, nil
+	return &Client{OpenaiCli: openaiCli}, nil
 }
 
 func (c *Client) GetResponse(character, message string) (string, error) {

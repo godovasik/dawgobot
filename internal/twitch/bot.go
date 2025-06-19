@@ -5,44 +5,33 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	tw "github.com/gempir/go-twitch-irc/v4"
 	"github.com/godovasik/dawgobot/internal/ai/deepseek"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
-	"github.com/godovasik/dawgobot/internal/timeline"
 	"github.com/godovasik/dawgobot/logger"
 )
 
 type Client struct {
-	TwitchClient *tw.Client
-	Timeline     *timeline.Timeline
-	Connetced    bool // пока не юзаю, хз зачем оно
+	TWClient *tw.Client
 }
 
-func NewClient(tl *timeline.Timeline) (*Client, error) {
+func NewClient() (*Client, error) {
 	access_token := os.Getenv("ACCESS_TOKEN")
 	if access_token == "" {
 		return nil, fmt.Errorf("variable ACCESS_TOKEN is not set")
 	}
+
 	twClient := tw.NewClient("dawgobot", fmt.Sprintf("oauth:%s", access_token))
-	return &Client{twClient, tl, false}, nil
-}
 
-func NewTwitchClient() (*tw.Client, error) {
-	access_token := os.Getenv("ACCESS_TOKEN")
-	if access_token == "" {
-		return nil, fmt.Errorf("variable ACCESS_TOKEN is not set")
-	}
-	client := tw.NewClient("dawgobot", fmt.Sprintf("oauth:%s", access_token))
-	return client, nil
+	return &Client{twClient}, nil
 }
 
 // TODO:
 // сейчас я вызываю тут запросы к дипсику и оламе, по хорошему это нужно делать где-то вне.
 // как начнут проблемы вылазить - переделаю
 func (c *Client) ReactToImages(username string) error {
-	c.TwitchClient.OnPrivateMessage(func(message tw.PrivateMessage) {
+	c.TWClient.OnPrivateMessage(func(message tw.PrivateMessage) {
 		urls := FindURLs(message.Message)
 		if len(urls) == 0 {
 			return
@@ -87,7 +76,7 @@ func (c *Client) ReactToImages(username string) error {
 		if descriptions == "" {
 			return
 		}
-		ds, err := deepseek.NewClient(nil)
+		ds, err := deepseek.NewClient()
 		if err != nil {
 			logger.Errorf("мне похуй бля %w", err)
 		}
@@ -100,73 +89,73 @@ func (c *Client) ReactToImages(username string) error {
 	})
 
 	logger.Infof("подключились к %s", username)
-	c.TwitchClient.Join(username)
+	c.TWClient.Join(username)
 
 	return nil
 }
 
 // пишет в таймлайн содержимое чата
 // надо будет убрать отсюда запись в файл, это будет делать метод таймлайна.
-func (c *Client) MonitorChannelChat(username string) error {
-	filename := fmt.Sprintf("logger/chatLogs/%s.txt", username)
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	timenow := time.Now().Format("02-01-06 15:04:05")
-	file.WriteString(fmt.Sprintf("[%v] Starting monitoring channel \"%s\"\n", timenow, username))
-
-	defer file.WriteString(fmt.Sprintf(
-		"[%v] Stopping monitoring channel \"%s\"\n\n", time.Now().Format("02-01-06 15:04:05"), username),
-	)
-
-	event := timeline.Event{
-		Type:      timeline.EventGlobal,
-		Content:   fmt.Sprintf("Starting monitoring channel \"%s\"", username),
-		Author:    "[botInfo]", // TODO: придумать более красивое решение
-		Timestamp: time.Now(),
-	}
-	c.Timeline.AddEvent(event)
-
-	// Обработка Ctrl+C
-	// exitCh := make(chan os.Signal, 1)
-	// signal.Notify(exitCh, os.Interrupt, syscall.SIGTERM)
-	//
-	// go func() {
-	// 	<-exitCh
-	// 	file.WriteString(fmt.Sprintf("[%v] Stopping monitoring channel \"%s\"\n\n",
-	// 		time.Now().Format("02-01-06 15:04:05"), username))
-	// 	file.Close()
-	//
-	// 	event := timeline.Event{
-	// 		Type:      timeline.EventBot,
-	// 		Content:   fmt.Sprintf("Stopping monitoring channel \"%s\"", username),
-	// 		Author:    "[botInfo]", // TODO: придумать более красивое решение
-	// 		Timestamp: time.Now(),
-	// 	}
-	// 	c.timeline.AddEvent(event)
-	// 	os.Exit(0)
-	// }()
-
-	c.TwitchClient.OnPrivateMessage(func(message tw.PrivateMessage) {
-		timenow := message.Time.Format("02-01-06 15:04:05")
-		// fmt.Printf("[%v] %s: %s\n", timenow, message.User.DisplayName, message.Message)
-		file.WriteString(fmt.Sprintf("[%v] %s: %s\n", timenow, message.User.DisplayName, message.Message))
-		event := timeline.Event{
-			Type:      timeline.EventChat,
-			Content:   message.Message,
-			Author:    message.User.Name,
-			Timestamp: time.Now(),
-		}
-		c.Timeline.AddEvent(event)
-	})
-
-	c.TwitchClient.Join(username)
-
-	return nil
-}
+// func (c *Client) MonitorChannelChat(username string) error {
+// 	filename := fmt.Sprintf("logger/chatLogs/%s.txt", username)
+// 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer file.Close()
+//
+// 	timenow := time.Now().Format("02-01-06 15:04:05")
+// 	file.WriteString(fmt.Sprintf("[%v] Starting monitoring channel \"%s\"\n", timenow, username))
+//
+// 	defer file.WriteString(fmt.Sprintf(
+// 		"[%v] Stopping monitoring channel \"%s\"\n\n", time.Now().Format("02-01-06 15:04:05"), username),
+// 	)
+//
+// 	event := timeline.Event{
+// 		Type:      timeline.EventGlobal,
+// 		Content:   fmt.Sprintf("Starting monitoring channel \"%s\"", username),
+// 		Author:    "[botInfo]", // TODO: придумать более красивое решение
+// 		Timestamp: time.Now(),
+// 	}
+// 	c.Timeline.AddEvent(event)
+//
+// 	// Обработка Ctrl+C
+// 	// exitCh := make(chan os.Signal, 1)
+// 	// signal.Notify(exitCh, os.Interrupt, syscall.SIGTERM)
+// 	//
+// 	// go func() {
+// 	// 	<-exitCh
+// 	// 	file.WriteString(fmt.Sprintf("[%v] Stopping monitoring channel \"%s\"\n\n",
+// 	// 		time.Now().Format("02-01-06 15:04:05"), username))
+// 	// 	file.Close()
+// 	//
+// 	// 	event := timeline.Event{
+// 	// 		Type:      timeline.EventBot,
+// 	// 		Content:   fmt.Sprintf("Stopping monitoring channel \"%s\"", username),
+// 	// 		Author:    "[botInfo]", // TODO: придумать более красивое решение
+// 	// 		Timestamp: time.Now(),
+// 	// 	}
+// 	// 	c.timeline.AddEvent(event)
+// 	// 	os.Exit(0)
+// 	// }()
+//
+// 	c.TWClient.OnPrivateMessage(func(message tw.PrivateMessage) {
+// 		timenow := message.Time.Format("02-01-06 15:04:05")
+// 		// fmt.Printf("[%v] %s: %s\n", timenow, message.User.DisplayName, message.Message)
+// 		file.WriteString(fmt.Sprintf("[%v] %s: %s\n", timenow, message.User.DisplayName, message.Message))
+// 		event := timeline.Event{
+// 			Type:      timeline.EventChat,
+// 			Content:   message.Message,
+// 			Author:    message.User.Name,
+// 			Timestamp: time.Now(),
+// 		}
+// 		c.Timeline.AddEvent(event)
+// 	})
+//
+// 	c.TWClient.Join(username)
+//
+// 	return nil
+// }
 
 func ScanForImagesHandler() func(message tw.PrivateMessage) {
 	return func(message tw.PrivateMessage) {
