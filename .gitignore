@@ -2,4 +2,4 @@
 logger/chatLogs/
 internal/ai/prompts.yaml
 .DONOTREADME.md
-internal/db/db.sqlite
+internal/database/db.sqlite

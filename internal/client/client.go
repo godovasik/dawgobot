@@ -20,7 +20,7 @@ type Client struct {
 	DSClient *deepseek.Client
 	DB       *database.DB
 
-	ctx context.Context
+	ctx    context.Context
 	cancel context.CancelFunc
 
 	Connetced bool // пока не юзаю, хз зачем оно
@@ -46,7 +46,7 @@ func (c *Client) MonitorChatEvents(channels ...string) error {
 	}
 
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
 
 		for {

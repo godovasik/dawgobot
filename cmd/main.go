@@ -65,18 +65,19 @@ func main() {
 		}
 		testEventsCount(streamer)
 	case "monitor":
-		boys := []string{
-			"dawgonosik",
-			"hak3li",
-			"mightypoot",
-			"ipoch0__0",
-			"timour_j",
-			"pixel_bot_o_0",
-			"lesnoybol1",
-		}
-		if len(os.Args) >= 3 {
-			boys = boys[:0]
-			boys[0] = os.Args[2]
+		boys := []string{}
+		if len(os.Args) < 3 {
+			boys = []string{
+				"dawgonosik",
+				"hak3li",
+				"mightypoot",
+				"ipoch0__0",
+				"timour_j",
+				"pixel_bot_o_0",
+				"lesnoybol1",
+			}
+		} else {
+			boys = append(boys, os.Args[2])
 		}
 		fmt.Println("monitoring chat for", boys)
 		testMonitorChatEvents(boys...)
