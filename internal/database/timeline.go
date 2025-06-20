@@ -200,6 +200,18 @@ func (db *DB) ExportEventsByCountToFile(streamerName string, count int) (string,
 	return db.exportEventsToFile(events, streamerName, from, to)
 }
 
+func (db *DB) GetEventsCountByStreamer(streamerName string) (int, error) {
+	query := `SELECT COUNT(*) FROM timeline WHERE streamer_name = ?`
+
+	var count int
+	err := db.conn.QueryRow(query, streamerName).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 // exportEventsToFile внутренняя функция для экспорта событий в файл
 func (db *DB) exportEventsToFile(events []timeline.Event, streamerName string, from, to time.Time) (string, error) {
 	// Создаем папку если не существует

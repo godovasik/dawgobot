@@ -1,6 +1,8 @@
 package client
 
 import (
+	"context"
+
 	"github.com/godovasik/dawgobot/internal/ai/deepseek"
 	"github.com/godovasik/dawgobot/internal/database"
 	"github.com/godovasik/dawgobot/internal/timeline"
@@ -36,5 +38,11 @@ func (b *ClientBuilder) WithDB(db *database.DB) *ClientBuilder {
 
 func (b *ClientBuilder) WithTimeline(tl *timeline.Timeline) *ClientBuilder {
 	b.Client.Timeline = tl
+	return b
+}
+
+func (b *ClientBuilder) WithContext(ctx context.Context, cancel context.CancelFunc) *ClientBuilder {
+	b.Client.ctx = ctx
+	b.Client.cancel = cancel
 	return b
 }

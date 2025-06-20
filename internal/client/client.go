@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"time"
 
 	twitch "github.com/gempir/go-twitch-irc/v4" // костыль пиздец
@@ -19,6 +20,9 @@ type Client struct {
 	DSClient *deepseek.Client
 	DB       *database.DB
 
+	ctx context.Context
+	cancel context.CancelFunc
+
 	Connetced bool // пока не юзаю, хз зачем оно
 }
 
@@ -32,6 +36,15 @@ func (c *Client) MonitorChatEvents(channels ...string) error {
 
 	batch := make([]timeline.Event, 0, 100)
 
+	flushBatch := func() {
+		logger.Infof("flushing %d events", len(batch))
+		timeline.PrintEvents(batch)
+		if err := c.DB.AddEvents(batch); err != nil {
+			logger.Errorf("db error: %w", err)
+		}
+		batch = batch[:0]
+	}
+
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
@@ -40,30 +53,18 @@ func (c *Client) MonitorChatEvents(channels ...string) error {
 			select {
 			case <-ticker.C:
 				if len(batch) > 0 {
-					logger.Infof("flushing %d events", len(batch))
-					timeline.PrintEvents(batch)
-					if err := c.DB.AddEvents(batch); err != nil {
-						logger.Errorf("db error: %w", err)
-					}
-					batch = batch[:0]
+					flushBatch()
 				}
 
 			case event, ok := <-eventCh:
 				if !ok {
-					logger.Infof("flushing %d events", len(batch))
-					timeline.PrintEvents(batch)
-					if err := c.DB.AddEvents(batch); err != nil {
-						logger.Errorf("db error: %w", err)
-					}
+					flushBatch()
 					return
 				}
 
 				batch = append(batch, event)
 				if len(batch) >= 50 {
-					if err := c.DB.AddEvents(batch); err != nil {
-						logger.Errorf("db error: %w", err)
-					}
-					batch = batch[:0]
+					flushBatch()
 				}
 
 			}

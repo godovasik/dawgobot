@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -34,12 +35,10 @@ func main() {
 		// testDifferentEventTypes()
 		// testChannelStress()
 		// testGetRecentEvents()
-
 		// testMonitorAndTimeline()
-		//
-
 		// testSqlite()
 		// testMonitorChatEvents()
+
 		return
 	}
 	switch os.Args[1] {
@@ -57,6 +56,14 @@ func main() {
 			fmt.Println("last events for ALL:")
 			testGetAllEvents()
 		}
+	case "count":
+		streamer := ""
+		if len(os.Args) < 3 {
+			streamer = "dawgonosik"
+		} else {
+			streamer = os.Args[2]
+		}
+		testEventsCount(streamer)
 	case "monitor":
 		boys := []string{
 			"dawgonosik",
@@ -75,6 +82,20 @@ func main() {
 		testMonitorChatEvents(boys...)
 	}
 
+}
+
+func testEventsCount(streamer string) {
+	db, err := database.New()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	count, err := db.GetEventsCountByStreamer(streamer)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(count, "events for", streamer)
 }
 
 func testGetAllEvents() {
@@ -118,9 +139,11 @@ func testMonitorChatEvents(channels ...string) {
 		fmt.Println(err)
 		return
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 	client := client.NewClientBuilder().
 		WithDB(db).
 		WithTwitch(tw).
+		WithContext(ctx, cancel).
 		Build()
 
 	err = client.MonitorChatEvents(channels...)
