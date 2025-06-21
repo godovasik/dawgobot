@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/godovasik/dawgobot/internal/ai/audio"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
 	"github.com/godovasik/dawgobot/internal/ai/openrouter"
 	"github.com/godovasik/dawgobot/internal/client"
@@ -15,6 +16,7 @@ import (
 	"github.com/godovasik/dawgobot/logger"
 )
 
+// можно переписать с "flags", но мне лень.
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("no argument here...")
@@ -76,11 +78,15 @@ func main() {
 				"pixel_bot_o_0",
 				"lesnoybol1",
 			}
+		} else if os.Args[2] == "--audio" {
+			//asdfasd
 		} else {
 			boys = append(boys, os.Args[2])
 		}
 		fmt.Println("monitoring chat for", boys)
 		testMonitorChatEvents(boys...)
+	case "audio":
+		audio.HolyFuck()
 	}
 
 }

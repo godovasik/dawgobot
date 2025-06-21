@@ -3,3 +3,4 @@ logger/chatLogs/
 internal/ai/prompts.yaml
 .DONOTREADME.md
 internal/database/db.sqlite
+venv/
