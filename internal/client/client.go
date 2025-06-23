@@ -108,12 +108,14 @@ func (c *Client) GetHandleMonitorWithImages(eventCh chan timeline.Event) func(me
 				logger.Infof("not an image: %s", u)
 				continue
 			}
+
 			logger.Infof("found image: %s", u)
 			image, err := ollama.GetImage(u)
 			if err != nil {
 				logger.Error(err.Error())
 				continue
 			}
+
 			desc, err := ollama.DescribeImageBytes(image)
 			// TODO: сделать gemeni сюда
 			if err != nil {

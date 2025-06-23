@@ -40,7 +40,7 @@ func main() {
 		// testSqlite()
 		// testMonitorChatEvents()
 
-		testGemini()
+		// testGemini()
 		// testRouterAgain()
 
 		return

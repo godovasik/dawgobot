@@ -308,3 +308,5 @@ func main() {
 
 	fmt.Printf("Generated caption with options: %s\n", captionWithOptions)
 }
+
+func test()

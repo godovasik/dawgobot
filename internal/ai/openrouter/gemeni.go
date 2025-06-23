@@ -14,22 +14,11 @@ type ContentPart struct {
 	} `json:"image_url,omitempty"`
 }
 
-// TODO: сделлть интерфейсом
 func (c *Client) DescribeImageGemeni(ctx context.Context, url string) (string, error) {
 	character := "describeImage"
 
 	req := openai.ChatCompletionRequest{
 		Model: "google/gemini-2.5-flash-lite-preview-06-17",
-		// Messages: []openai.ChatCompletionMessage{
-		// 	{
-		// 		Role:    "system",
-		// 		Content: Characters[character],
-		// 	},
-		// 	{
-		// 		Role:    "user",
-		// 		Content: "hi, just testing",
-		// 	},
-		// },
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role: "user",
