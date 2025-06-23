@@ -3,9 +3,8 @@ package deepseek
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"os"
+	"time"
 
 	"github.com/godovasik/dawgobot/logger"
 	"github.com/sashabaranov/go-openai"
@@ -82,8 +81,7 @@ func (c *Client) GetResponse(character, message string) (string, error) {
 	start := time.Now()
 	resp, err := c.OpenaiCli.CreateChatCompletion(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("Ошибка при отправке запроса: %v", err)
-
+		return "", fmt.Errorf("ошибка при отправке запроса: %v", err)
 	}
 
 	logger.Infof("реквест занял времяни: %v", time.Since(start))

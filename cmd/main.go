@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/godovasik/dawgobot/internal/ai/audio"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
 	"github.com/godovasik/dawgobot/internal/ai/openrouter"
 	"github.com/godovasik/dawgobot/internal/client"
@@ -40,6 +39,9 @@ func main() {
 		// testMonitorAndTimeline()
 		// testSqlite()
 		// testMonitorChatEvents()
+
+		testGemini()
+		// testRouterAgain()
 
 		return
 	}
@@ -78,17 +80,41 @@ func main() {
 				"pixel_bot_o_0",
 				"lesnoybol1",
 			}
-		} else if os.Args[2] == "--audio" {
-			//asdfasd
+		} else if os.Args[2] == "images" {
+			// monitor + images
 		} else {
 			boys = append(boys, os.Args[2])
 		}
 		fmt.Println("monitoring chat for", boys)
 		testMonitorChatEvents(boys...)
-	case "audio":
-		audio.HolyFuck()
+	// case "audio":
+	// 	audio.HolyFuck()
+
+	case "next":
+		fmt.Println("mok")
+	}
+}
+
+func testGemini() {
+	err := openrouter.LoadCharacters()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
+	client, err := openrouter.GetNewClient(true)
+	if err != nil {
+		fmt.Println("getnewclient err,", err)
+		return
+	}
+	url := "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+	ctx := context.Background()
+	resp, err := client.DescribeImageGemeni(ctx, url)
+	if err != nil {
+		fmt.Println("describeImage error:", err)
+		return
+	}
+	fmt.Println(resp)
 }
 
 func testEventsCount(streamer string) {
@@ -135,7 +161,7 @@ func testGetEvents(streamer string) {
 	timeline.PrintEvents(events)
 }
 
-func testMonitorChatEvents(channels ...string) {
+func testMonitorChatEventsWithImages(channels ...string) {
 	tw, err := twitch.NewClient()
 	if err != nil {
 		fmt.Println(err)
@@ -161,14 +187,31 @@ func testMonitorChatEvents(channels ...string) {
 	client.TWClient.TWClient.Connect()
 }
 
-// func ReactToImages() {
-// 	deepseek.LoadCharacters()
-// 	tc, err := twitch.NewClient(nil)
-// 	err = tc.ReactToImages("lesnoybol1")
-// 	err = tc.TWClient.Connect()
-// 	fmt.Println("ХУЙ:", err)
-//
-// }
+func testMonitorChatEvents(channels ...string) {
+	tw, err := twitch.NewClient()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db, err := database.New()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	client := client.NewClientBuilder().
+		WithDB(db).
+		WithTwitch(tw).
+		WithContext(ctx, cancel).
+		Build()
+
+	err = client.MonitorChatEvents(channels...)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	client.TWClient.TWClient.Connect()
+}
 
 func testSqlite() {
 	db, err := database.New()
@@ -197,64 +240,6 @@ func testSqlite() {
 	timeline.PrintEvents(all)
 }
 
-// эта функция мониторит твич чат, и раз в 15 секунд отправляет сообщение
-// с учетом предыдущих, за 60 секунд.
-// TODO: отслеживать чат дольше, мб отслеживать конкретный диалог с тем, кого тегнули, но это уже потом
-// func testMonitorAndTimeline() {
-// 	tl := timeline.NewTimeline(100)
-// 	defer tl.Stop()
-//
-// 	tw, err := twitch.NewClient(tl)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-//
-// 	ds, err := deepseek.NewClient(tl)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-//
-// 	err = deepseek.LoadCharacters()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-//
-// 	tw.MonitorChannelChat("thijs")
-//
-// 	go func() { //yourself
-// 		ticker := time.NewTicker(15 * time.Second)
-// 		defer ticker.Stop()
-// 		for {
-// 			select {
-// 			case <-ticker.C:
-// 				events := tl.GetRecentEvents(60 * time.Second)
-// 				if len(events) == 0 {
-// 					logger.Info("no new events, skip")
-// 				} else {
-// 					logger.Infof("new events:%d", len(events))
-// 					logger.Infof("Отправляем:%s", timeline.SprintEvents(events))
-// 					logger.Info("ждем ответ дипсика...")
-//
-// 					resp, err := ds.GetResponse("dawgobot", timeline.SprintEvents(events))
-// 					if err != nil {
-// 						logger.Info(err.Error())
-// 					}
-// 					fmt.Println("from deepseek:", resp)
-// 				}
-// 			}
-// 		}
-//
-// 	}()
-//
-// 	if err := tw.TWClient.Connect(); err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-// }
-
 func testMockEvent() {
 	mock := timeline.NewEventMock()
 	fmt.Println(mock())
@@ -275,35 +260,7 @@ func testTimeline() {
 	for _, e := range events {
 		fmt.Println(e.Content)
 	}
-
 }
-
-// func testSimpleDeep() {
-// 	client, err := deepseek.NewClient()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-//
-// 	err = deepseek.LoadCharacters()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-// 	messages := `
-// // [15-06-25 13:11:41] FiSHB0NE__: TriHard
-// // [15-06-25 13:11:42] ThePositiveBot: [Minigame] AUTOMATIC UNSCRAMBLE! PogChamp The first person to unscramble geremm wins 1 cookie! OpieOP
-// // [15-06-25 13:12:49] zyrwoot: Aware forsen was on epstein island
-// // [15-06-25 13:13:13] djfors_: docJAM now playing: Top 10 Best Restaurants to Visit in Limassol | Cyp[...]
-// // [15-06-25 13:13:43] TwoLetterName: Aware
-// // [15-06-25 13:13:54] THIZZBOX707: Aware
-// // `
-// 	err = deepseek.GetResponse(client, "dawgobot", messages)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-// }
 
 func testLoadCharacters() {
 	openrouter.LoadCharacters()
@@ -329,23 +286,7 @@ func testGetImageAndDescribe() {
 		logger.Info("ollama error:" + err.Error())
 	}
 	fmt.Printf("image url:%s\ndescription: %s\n", u, resp)
-
 }
-
-// func testScanForImages() {
-// 	client, err := twitch.NewClient()
-// 	if err != nil {
-// 		fmt.Println("fuck you")
-// 	}
-// 	client.OnPrivateMessage(twitch.ScanForImagesHandler())
-// 	client.Join("lesnoybol1")
-// 	err = client.Connect()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-//
-// }
 
 func testFindUrl() {
 	texts := []string{
@@ -361,17 +302,6 @@ func testFindUrl() {
 	}
 	fmt.Println(urls)
 }
-
-// func testMonitorChat() {
-// 	client, err := twitch.NewClient()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return
-// 	}
-//
-// 	username := "forsen"
-// 	twitch.MonitorChannelChat(client, username)
-// }
 
 func testCheckUrl() {
 	// url := "https://sun9-28.userapi.com/impg/GW4o3NxSl2hOWrKy2UjFtcrTbqMgGa9ijf3o1Q/V4oxBB1zvco.jpg?size=551x1178&quality=95&sign=92db4357f91dbd160db4a3b20ec72da7&type=album"

@@ -40,6 +40,7 @@ type EventType int
 const (
 	EventGlobal EventType = iota
 	EventChat
+	EventImage
 	EventSpeech
 	EventScreenshot
 )

@@ -160,3 +160,112 @@ func testChannelStress() {
 	fmt.Printf("Added 150 events rapidly, buffer has: %d events\n", len(events))
 	fmt.Println()
 }
+
+// func ReactToImages() {
+// 	deepseek.LoadCharacters()
+// 	tc, err := twitch.NewClient(nil)
+// 	err = tc.ReactToImages("lesnoybol1")
+// 	err = tc.TWClient.Connect()
+// 	fmt.Println("ХУЙ:", err)
+//
+// }
+
+// func testSimpleDeep() {
+// 	client, err := deepseek.NewClient()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	err = deepseek.LoadCharacters()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	messages := `
+// // [15-06-25 13:11:41] FiSHB0NE__: TriHard
+// // [15-06-25 13:11:42] ThePositiveBot: [Minigame] AUTOMATIC UNSCRAMBLE! PogChamp The first person to unscramble geremm wins 1 cookie! OpieOP
+// // [15-06-25 13:12:49] zyrwoot: Aware forsen was on epstein island
+// // [15-06-25 13:13:13] djfors_: docJAM now playing: Top 10 Best Restaurants to Visit in Limassol | Cyp[...]
+// // [15-06-25 13:13:43] TwoLetterName: Aware
+// // [15-06-25 13:13:54] THIZZBOX707: Aware
+// // `
+// 	err = deepseek.GetResponse(client, "dawgobot", messages)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// }
+
+// func testScanForImages() {
+// 	client, err := twitch.NewClient()
+// 	if err != nil {
+// 		fmt.Println("fuck you")
+// 	}
+// 	client.OnPrivateMessage(twitch.ScanForImagesHandler())
+// 	client.Join("lesnoybol1")
+// 	err = client.Connect()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// }
+
+// эта функция мониторит твич чат, и раз в 15 секунд отправляет сообщение
+// с учетом предыдущих, за 60 секунд.
+// TODO: отслеживать чат дольше, мб отслеживать конкретный диалог с тем, кого тегнули, но это уже потом
+// func testMonitorAndTimeline() {
+// 	tl := timeline.NewTimeline(100)
+// 	defer tl.Stop()
+//
+// 	tw, err := twitch.NewClient(tl)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	ds, err := deepseek.NewClient(tl)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	err = deepseek.LoadCharacters()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+//
+// 	tw.MonitorChannelChat("thijs")
+//
+// 	go func() { //yourself
+// 		ticker := time.NewTicker(15 * time.Second)
+// 		defer ticker.Stop()
+// 		for {
+// 			select {
+// 			case <-ticker.C:
+// 				events := tl.GetRecentEvents(60 * time.Second)
+// 				if len(events) == 0 {
+// 					logger.Info("no new events, skip")
+// 				} else {
+// 					logger.Infof("new events:%d", len(events))
+// 					logger.Infof("Отправляем:%s", timeline.SprintEvents(events))
+// 					logger.Info("ждем ответ дипсика...")
+//
+// 					resp, err := ds.GetResponse("dawgobot", timeline.SprintEvents(events))
+// 					if err != nil {
+// 						logger.Info(err.Error())
+// 					}
+// 					fmt.Println("from deepseek:", resp)
+// 				}
+// 			}
+// 		}
+//
+// 	}()
+//
+// 	if err := tw.TWClient.Connect(); err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// }
