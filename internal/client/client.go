@@ -7,6 +7,7 @@ import (
 	twitch "github.com/gempir/go-twitch-irc/v4" // костыль пиздец
 	"github.com/godovasik/dawgobot/internal/ai/deepseek"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
+	"github.com/godovasik/dawgobot/internal/ai/openrouter"
 	"github.com/godovasik/dawgobot/internal/database"
 	"github.com/godovasik/dawgobot/internal/timeline"
 	tw "github.com/godovasik/dawgobot/internal/twitch"
@@ -18,8 +19,10 @@ import (
 type Client struct {
 	TWClient *tw.Client
 	Timeline *timeline.Timeline
-	DSClient *deepseek.Client
 	DB       *database.DB
+
+	DSClient *deepseek.Client
+	Gemeni *openrouter.Client
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -28,7 +31,7 @@ type Client struct {
 }
 
 // TODO:graceful shutdow, write "start/end monitoring to logs"
-func (c *Client) MonitorChatEvents(channels ...string) error {
+func (c *Client) MonitorChatEvents(WithImages bool, channels ...string) error {
 	eventCh := make(chan timeline.Event, 100)
 	// FIXME: вынести в горутину
 	// defer close(eventCh)
@@ -110,18 +113,19 @@ func (c *Client) GetHandleMonitorWithImages(eventCh chan timeline.Event) func(me
 			}
 
 			logger.Infof("found image: %s", u)
-			image, err := ollama.GetImage(u)
-			if err != nil {
-				logger.Error(err.Error())
-				continue
-			}
+			// image, err := ollama.GetImage(u)
+			// if err != nil {
+			// 	logger.Error(err.Error())
+			// 	continue
+			// }
 
-			desc, err := ollama.DescribeImageBytes(image)
+			desc, err := c.Gemeni.DescribeImageGemeni(c.ctx, u)
 			// TODO: сделать gemeni сюда
 			if err != nil {
 				logger.Error(err.Error())
 				continue
 			}
+
 
 			imageEvent := timeline.Event{
 				Type:      timeline.EventImage,

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/godovasik/dawgobot/internal/ai/deepseek"
+	"github.com/godovasik/dawgobot/internal/ai/openrouter"
 	"github.com/godovasik/dawgobot/internal/database"
 	"github.com/godovasik/dawgobot/internal/timeline"
 	tw "github.com/godovasik/dawgobot/internal/twitch"
@@ -44,5 +45,10 @@ func (b *ClientBuilder) WithTimeline(tl *timeline.Timeline) *ClientBuilder {
 func (b *ClientBuilder) WithContext(ctx context.Context, cancel context.CancelFunc) *ClientBuilder {
 	b.Client.ctx = ctx
 	b.Client.cancel = cancel
+	return b
+}
+
+func (b *ClientBuilder) WithGemeni(gmn *openrouter.Client) *ClientBuilder {
+	b.Client.Gemeni = gmn
 	return b
 }

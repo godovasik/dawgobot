@@ -80,15 +80,28 @@ func main() {
 				"pixel_bot_o_0",
 				"lesnoybol1",
 			}
-		} else if os.Args[2] == "images" {
-			// monitor + images
 		} else {
 			boys = append(boys, os.Args[2])
 		}
 		fmt.Println("monitoring chat for", boys)
 		testMonitorChatEvents(boys...)
-	// case "audio":
-	// 	audio.HolyFuck()
+	case "images":
+		boys := []string{}
+		if len(os.Args) < 3 {
+			boys = []string{
+				"dawgonosik",
+				"hak3li",
+				"mightypoot",
+				"ipoch0__0",
+				"timour_j",
+				"pixel_bot_o_0",
+				"lesnoybol1",
+			}
+		} else {
+			boys = append(boys, os.Args[2])
+		}
+		fmt.Println("monitoring chat with images for", boys)
+		testMonitorChatEventsWithImages(boys...)
 
 	case "next":
 		fmt.Println("mok")
@@ -162,24 +175,39 @@ func testGetEvents(streamer string) {
 }
 
 func testMonitorChatEventsWithImages(channels ...string) {
+	err := openrouter.LoadCharacters()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	tw, err := twitch.NewClient()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
 	db, err := database.New()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	gmn, err := openrouter.GetNewClient(true)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	client := client.NewClientBuilder().
 		WithDB(db).
 		WithTwitch(tw).
 		WithContext(ctx, cancel).
+		WithGemeni(gmn).
 		Build()
 
-	err = client.MonitorChatEvents(channels...)
+	err = client.MonitorChatEvents(true, channels...)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -205,7 +233,7 @@ func testMonitorChatEvents(channels ...string) {
 		WithContext(ctx, cancel).
 		Build()
 
-	err = client.MonitorChatEvents(channels...)
+	err = client.MonitorChatEvents(false, channels...)
 	if err != nil {
 		fmt.Println(err)
 		return

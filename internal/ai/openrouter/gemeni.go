@@ -15,7 +15,7 @@ type ContentPart struct {
 }
 
 func (c *Client) DescribeImageGemeni(ctx context.Context, url string) (string, error) {
-	character := "describeImage"
+	character := "describeImageShort"
 
 	req := openai.ChatCompletionRequest{
 		Model: "google/gemini-2.5-flash-lite-preview-06-17",
