@@ -89,7 +89,7 @@ func main() {
 			boys = append(boys, os.Args[2])
 		}
 		fmt.Println("monitoring chat for", boys)
-		testMonitorChatEvents(boys...)
+		testMonitorChatEventsWithImages(false, boys...)
 	case "images":
 		boys := []string{}
 		if len(os.Args) < 3 {
@@ -106,7 +106,7 @@ func main() {
 			boys = append(boys, os.Args[2])
 		}
 		fmt.Println("monitoring chat with images for", boys)
-		testMonitorChatEventsWithImages(boys...)
+		testMonitorChatEventsWithImages(true, boys...)
 
 	case "replyimg":
 		boys := []string{}
@@ -263,7 +263,7 @@ func testGetEvents(streamer string) {
 	timeline.PrintEvents(events)
 }
 
-func testMonitorChatEventsWithImages(channels ...string) {
+func testMonitorChatEventsWithImages(WithImages bool, channels ...string) {
 	err := openrouter.LoadCharacters()
 	if err != nil {
 		fmt.Println(err)
@@ -306,7 +306,7 @@ func testMonitorChatEventsWithImages(channels ...string) {
 
 	// этот теперть тоже блокирующий - ждет контекста
 	go func() {
-		if err := client.MonitorChatEvents(true, channels...); err != nil {
+		if err := client.MonitorChatEvents(WithImages, channels...); err != nil {
 			logger.Errorf("Monitoring error: %v", err)
 		}
 	}()
@@ -327,6 +327,7 @@ func testMonitorChatEventsWithImages(channels ...string) {
 	time.Sleep(2 * time.Second)
 }
 
+// shouldnt use that, deprecated
 func testMonitorChatEvents(channels ...string) {
 	tw, err := twitch.NewClient()
 	if err != nil {

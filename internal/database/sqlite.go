@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 
+	"github.com/godovasik/dawgobot/logger"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -39,6 +40,7 @@ func New() (*DB, error) {
 		conn.Close()
 		return nil, err
 	}
+	logger.Info("db initialized")
 
 	return db, nil
 }
