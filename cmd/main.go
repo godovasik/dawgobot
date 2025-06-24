@@ -193,7 +193,7 @@ func testMonitorChatEventsWithImages(channels ...string) {
 		return
 	}
 
-	gmn, err := openrouter.GetNewClient(true)
+	gmn, err := openrouter.GetNewClient(false)
 	if err != nil {
 		fmt.Println(err)
 		return
