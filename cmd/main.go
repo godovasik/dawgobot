@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
@@ -207,12 +209,34 @@ func testMonitorChatEventsWithImages(channels ...string) {
 		WithGemeni(gmn).
 		Build()
 
-	err = client.MonitorChatEvents(true, channels...)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	client.TWClient.TWClient.Connect()
+	go func() {
+		logger.Info("Connecting to Twitch IRC...")
+		if err := client.TWClient.TWClient.Connect(); err != nil {
+			logger.Errorf("IRC connection error: %v", err)
+		}
+	}()
+
+	// Запускаем мониторинг в горутине
+	go func() {
+		if err := client.MonitorChatEvents(true, channels...); err != nil {
+			logger.Errorf("Monitoring error: %v", err)
+		}
+	}()
+
+	// Ждем сигнал
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+
+	logger.Info("Shutting down...")
+
+	// Отключаемся от IRC явно
+	client.TWClient.TWClient.Disconnect() // если есть такой метод
+
+	// Отменяем контекст
+	cancel()
+
+	time.Sleep(2 * time.Second)
 }
 
 func testMonitorChatEvents(channels ...string) {
@@ -221,11 +245,13 @@ func testMonitorChatEvents(channels ...string) {
 		fmt.Println(err)
 		return
 	}
+
 	db, err := database.New()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	client := client.NewClientBuilder().
 		WithDB(db).
@@ -238,6 +264,7 @@ func testMonitorChatEvents(channels ...string) {
 		fmt.Println(err)
 		return
 	}
+
 	client.TWClient.TWClient.Connect()
 }
 

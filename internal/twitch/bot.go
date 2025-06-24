@@ -2,9 +2,11 @@ package twitch
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	tw "github.com/gempir/go-twitch-irc/v4"
 	"github.com/godovasik/dawgobot/internal/ai/deepseek"
@@ -13,18 +15,44 @@ import (
 )
 
 type Client struct {
-	TWClient *tw.Client
+	TWClient     *tw.Client
+	httpClient   *http.Client
+	clientID     string
+	clientSecret string
+	appToken     string
 }
 
 func NewClient() (*Client, error) {
-	access_token := os.Getenv("ACCESS_TOKEN")
-	if access_token == "" {
+	accessToken := os.Getenv("ACCESS_TOKEN")
+	if accessToken == "" {
 		return nil, fmt.Errorf("variable ACCESS_TOKEN is not set")
 	}
 
-	twClient := tw.NewClient("dawgobot", fmt.Sprintf("oauth:%s", access_token))
+	clientID := os.Getenv("TWITCH_CLIENT_ID")
+	if clientID == "" {
+		return nil, fmt.Errorf("variable TWITCH_CLIENT_ID is not set")
+	}
 
-	return &Client{twClient}, nil
+	clientSecret := os.Getenv("TWITCH_CLIENT_SECRET")
+	if clientSecret == "" {
+		return nil, fmt.Errorf("variable TWITCH_CLIENT_SECRET is not set")
+	}
+
+	twClient := tw.NewClient("dawgobot", fmt.Sprintf("oauth:%s", accessToken))
+
+	client := &Client{
+		TWClient:     twClient,
+		httpClient:   &http.Client{Timeout: 10 * time.Second},
+		clientID:     clientID,
+		clientSecret: clientSecret,
+	}
+
+	// Получаем app access token для API запросов
+	if err := client.getAppToken(); err != nil {
+		return nil, fmt.Errorf("failed to get app token: %w", err)
+	}
+
+	return client, nil
 }
 
 // TODO:
