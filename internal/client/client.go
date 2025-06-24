@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	twitch "github.com/gempir/go-twitch-irc/v4" // костыль пиздец
@@ -33,7 +34,8 @@ type Client struct {
 
 // MonitorChatEvents с graceful shutdown
 // TODO: Понять
-// ебать я гений на самом деле пиздец
+// i am a genius
+// это будет основная функция, буду сюда все писать
 func (c *Client) MonitorChatEvents(WithImages bool, channels ...string) error {
 	eventCh := make(chan timeline.Event, 100)
 
@@ -50,11 +52,7 @@ func (c *Client) MonitorChatEvents(WithImages bool, channels ...string) error {
 	}
 
 	// Выбираем обработчик в зависимости от WithImages
-	if WithImages {
-		c.TWClient.TWClient.OnPrivateMessage(c.GetHandleMonitorWithImages(eventCh))
-	} else {
-		c.TWClient.TWClient.OnPrivateMessage(c.GetHandleMonitor(eventCh))
-	}
+	c.TWClient.TWClient.OnPrivateMessage(c.GetHandleMonitor(eventCh, WithImages))
 
 	// Запускаем горутину для обработки батчей
 	batchDone := make(chan struct{})
@@ -135,7 +133,7 @@ func (c *Client) processBatches(eventCh <-chan timeline.Event, done chan<- struc
 }
 
 // GetHandleMonitor остается без изменений
-func (c *Client) GetHandleMonitor(eventCh chan timeline.Event) func(message twitch.PrivateMessage) {
+func (c *Client) GetHandleMonitor(eventCh chan timeline.Event, withImages bool) func(message twitch.PrivateMessage) {
 	return func(message twitch.PrivateMessage) {
 		event := messageToEvent(message)
 
@@ -148,84 +146,63 @@ func (c *Client) GetHandleMonitor(eventCh chan timeline.Event) func(message twit
 		default:
 			logger.Warn("Event channel full, dropping event")
 		}
+
+		if withImages {
+			c.processImages(eventCh, event)
+		}
 	}
 }
 
-// GetHandleMonitorWithImages с улучшенной обработкой контекста
-func (c *Client) GetHandleMonitorWithImages(eventCh chan timeline.Event) func(message twitch.PrivateMessage) {
-	return func(message twitch.PrivateMessage) {
-		// Проверяем контекст в начале
+func (c *Client) processImages(eventCh chan timeline.Event, event timeline.Event) {
+	urls := tw.FindURLs(event.Content)
+	if len(urls) == 0 {
+		return
+	}
+
+	for _, u := range urls {
+		// Проверяем контекст перед каждой операцией
 		select {
 		case <-c.ctx.Done():
 			return
 		default:
 		}
 
-		event := messageToEvent(message)
+		ok, err := ollama.CheckUrl(u)
+		if err != nil {
+			logger.Errorf("Error checking URL %s: %v", u, err)
+			continue
+		}
+		if !ok {
+			logger.Infof("Not an image: %s", u)
+			continue
+		}
 
-		// Отправляем основное событие
+		logger.Infof("Found image: %s", u)
+		desc, err := c.Gemeni.DescribeImageGemeni(c.ctx, u)
+		if err != nil {
+			logger.Errorf("Error describing image %s: %v", u, err)
+			continue
+		}
+
+		imageEvent := timeline.Event{
+			Type:      timeline.EventImage,
+			Content:   desc,
+			Author:    event.Author,
+			Streamer:  event.Streamer,
+			Timestamp: event.Timestamp.Add(time.Millisecond), // для правильной последовательности
+		}
+
+		// Отправляем событие изображения
 		select {
-		case eventCh <- event:
+		case eventCh <- imageEvent:
 		case <-c.ctx.Done():
 			return
 		default:
-			logger.Warn("Event channel full, dropping chat event")
-			return
-		}
-
-		// Обрабатываем изображения
-		urls := tw.FindURLs(event.Content)
-		if len(urls) == 0 {
-			return
-		}
-
-		for _, u := range urls {
-			// Проверяем контекст перед каждой операцией
-			select {
-			case <-c.ctx.Done():
-				return
-			default:
-			}
-
-			ok, err := ollama.CheckUrl(u)
-			if err != nil {
-				logger.Errorf("Error checking URL %s: %v", u, err)
-				continue
-			}
-			if !ok {
-				logger.Infof("Not an image: %s", u)
-				continue
-			}
-
-			logger.Infof("Found image: %s", u)
-
-			desc, err := c.Gemeni.DescribeImageGemeni(c.ctx, u)
-			if err != nil {
-				logger.Errorf("Error describing image %s: %v", u, err)
-				continue
-			}
-
-			imageEvent := timeline.Event{
-				Type:      timeline.EventImage,
-				Content:   desc,
-				Author:    event.Author,
-				Streamer:  event.Streamer,
-				Timestamp: event.Timestamp.Add(time.Millisecond), // для правильной последовательности
-			}
-
-			// Отправляем событие изображения
-			select {
-			case eventCh <- imageEvent:
-			case <-c.ctx.Done():
-				return
-			default:
-				logger.Warn("Event channel full, dropping image event")
-			}
+			logger.Warn("Event channel full, dropping image event")
 		}
 	}
 }
 
-// messageToEvent остается без изменений
 func messageToEvent(message twitch.PrivateMessage) timeline.Event {
 	return timeline.Event{
 		Type:      timeline.EventChat,
@@ -233,5 +210,57 @@ func messageToEvent(message twitch.PrivateMessage) timeline.Event {
 		Author:    message.User.Name,
 		Streamer:  message.Channel,
 		Timestamp: time.Now(),
+	}
+}
+
+func (c *Client) ReactToImages(channels ...string) error {
+	c.TWClient.TWClient.OnPrivateMessage(c.GetHandleSimpleImageResponse())
+	c.TWClient.TWClient.Join(channels...)
+	return nil
+}
+
+func (c *Client) GetHandleSimpleImageResponse() func(message twitch.PrivateMessage) {
+	return func(message twitch.PrivateMessage) {
+		urls := tw.FindURLs(message.Message)
+		isReplying := strings.Contains(message.Message, "@dawgobot")
+		if len(urls) == 0 {
+			if isReplying {
+				answer := "чел я пока только умею на картинки отвечать"
+				c.TWClient.TWClient.Reply(message.Channel, message.ID, answer)
+			}
+			return
+		}
+
+		u := urls[0] // допустим у нас одна картинка
+		ok, err := ollama.CheckUrl(u)
+		if err != nil {
+			logger.Errorf("Error checking URL %s: %v", u, err)
+			return
+		}
+		if !ok {
+			if isReplying {
+				answer := "это не картинка это хуй знает что"
+				c.TWClient.TWClient.Reply(message.Channel, message.ID, answer)
+			}
+
+			logger.Infof("Not an image: %s", u)
+			return
+		}
+
+		logger.Infof("Found image: %s", u)
+		desc, err := c.Gemeni.DescribeImageGemeni(c.ctx, u)
+		if err != nil {
+			logger.Errorf("Error describing image %s: %v", u, err)
+			return
+		}
+
+		resp, err := c.DSClient.GetResponse("image", desc)
+		if err != nil {
+			logger.Errorf("err from deepseekk: %w", err)
+			return
+		}
+
+		logger.Infof("replying to @%s", message.User.DisplayName)
+		c.TWClient.TWClient.Reply(message.Channel, message.ID, resp)
 	}
 }

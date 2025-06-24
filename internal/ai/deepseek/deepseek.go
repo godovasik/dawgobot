@@ -47,11 +47,11 @@ func NewClient() (*Client, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("DEEPSEEK_TOKEN not set")
 	}
-	logger.Info("token set...")
 
 	config := openai.DefaultConfig(apiKey)
 	config.BaseURL = "https://api.deepseek.com"
 	openaiCli := openai.NewClientWithConfig(config)
+	logger.Info("deepseek initialized")
 	return &Client{OpenaiCli: openaiCli}, nil
 }
 

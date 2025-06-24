@@ -8,6 +8,7 @@ import (
 	"github.com/godovasik/dawgobot/internal/database"
 	"github.com/godovasik/dawgobot/internal/timeline"
 	tw "github.com/godovasik/dawgobot/internal/twitch"
+	"github.com/godovasik/dawgobot/logger"
 )
 
 type ClientBuilder struct {
@@ -19,6 +20,7 @@ func NewClientBuilder() *ClientBuilder {
 }
 
 func (b *ClientBuilder) Build() *Client {
+	logger.Info("finished building")
 	return b.Client
 }
 

@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/godovasik/dawgobot/internal/ai/deepseek"
 	"github.com/godovasik/dawgobot/internal/ai/ollama"
 	"github.com/godovasik/dawgobot/internal/ai/openrouter"
 	"github.com/godovasik/dawgobot/internal/client"
@@ -44,6 +45,8 @@ func main() {
 
 		// testGemini()
 		// testRouterAgain()
+
+		testTwitchApi()
 
 		return
 	}
@@ -105,9 +108,41 @@ func main() {
 		fmt.Println("monitoring chat with images for", boys)
 		testMonitorChatEventsWithImages(boys...)
 
-	case "next":
+	case "replyimg":
+		boys := []string{}
+		if len(os.Args) < 3 {
+			boys = []string{
+				"dawgonosik",
+				"hak3li",
+				"mightypoot",
+				"ipoch0__0",
+				"timour_j",
+				"pixel_bot_o_0",
+				"lesnoybol1",
+			}
+		} else {
+			boys = append(boys, os.Args[2])
+		}
+		testReplyToImages(boys...)
 		fmt.Println("mok")
 	}
+}
+
+func testTwitchApi() {
+	twcli, err := twitch.NewClient()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	data, err := twcli.GetStreamerInfo("silvername")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(data)
+	fmt.Println("---")
+	fmt.Println(twcli.GetViewerCount("SilverName"))
 }
 
 func testGemini() {
@@ -161,6 +196,58 @@ func testGetAllEvents() {
 	timeline.PrintEvents(events)
 }
 
+func testReplyToImages(channels ...string) {
+	tw, err := twitch.NewClient()
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	err = openrouter.LoadCharacters()
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	err = deepseek.LoadCharacters() // this is ugly
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	gmn, err := openrouter.GetNewClient(false)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	ds, err := deepseek.NewClient()
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	client := client.NewClientBuilder().
+		WithTwitch(tw).
+		WithContext(ctx, cancel).
+		WithGemeni(gmn).
+		WithDeepseek(ds).
+		Build()
+
+	err = client.ReactToImages(channels...)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	err = client.TWClient.TWClient.Connect()
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+}
+
 func testGetEvents(streamer string) {
 	db, err := database.New()
 	if err != nil {
@@ -209,6 +296,7 @@ func testMonitorChatEventsWithImages(channels ...string) {
 		WithGemeni(gmn).
 		Build()
 
+	// эта в горутине, тк она блокирующая
 	go func() {
 		logger.Info("Connecting to Twitch IRC...")
 		if err := client.TWClient.TWClient.Connect(); err != nil {
@@ -216,14 +304,14 @@ func testMonitorChatEventsWithImages(channels ...string) {
 		}
 	}()
 
-	// Запускаем мониторинг в горутине
+	// этот теперть тоже блокирующий - ждет контекста
 	go func() {
 		if err := client.MonitorChatEvents(true, channels...); err != nil {
 			logger.Errorf("Monitoring error: %v", err)
 		}
 	}()
 
-	// Ждем сигнал
+	// shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
@@ -231,7 +319,7 @@ func testMonitorChatEventsWithImages(channels ...string) {
 	logger.Info("Shutting down...")
 
 	// Отключаемся от IRC явно
-	client.TWClient.TWClient.Disconnect() // если есть такой метод
+	client.TWClient.TWClient.Disconnect()
 
 	// Отменяем контекст
 	cancel()

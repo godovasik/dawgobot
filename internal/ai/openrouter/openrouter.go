@@ -39,8 +39,12 @@ func LoadCharacters() error {
 
 	// Присваиваем загруженных персонажей
 	Characters = config.Characters
+	keys := []string{}
+	for k := range Characters {
+		keys = append(keys, k)
+	}
 
-	logger.Infof("Загружено %d персонажей", len(Characters))
+	logger.Infof("Загружено %d персонажей: %v", len(Characters), keys)
 	return nil
 }
 
@@ -101,8 +105,9 @@ func GetNewClient(logging bool) (*Client, error) {
 	}
 	OpenaiClient := openai.NewClientWithConfig(config)
 
-
 	Client := Client{OpenaiClient}
+
+	logger.Info("openrouter initialized")
 	return &Client, nil
 }
 
