@@ -43,10 +43,10 @@ func main() {
 		// testSqlite()
 		// testMonitorChatEvents()
 
-		// testGemini()
+		testGemini()
 		// testRouterAgain()
 
-		testTwitchApi()
+		// testTwitchApi()
 
 		return
 	}
@@ -157,7 +157,7 @@ func testGemini() {
 		fmt.Println("getnewclient err,", err)
 		return
 	}
-	url := "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+	url := "https://cdn.discordapp.com/attachments/1222897393666883624/1387746763577757787/500.jpg?ex=685e7763&is=685d25e3&hm=fe7ce51bea4058d8b80be713ac91e3c0104b5ec92411563edde5c987f8566e6a&"
 	ctx := context.Background()
 	resp, err := client.DescribeImageGemeni(ctx, url)
 	if err != nil {

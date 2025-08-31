@@ -4,3 +4,7 @@ internal/ai/prompts.yaml
 .DONOTREADME.md
 internal/database/db.sqlite
 venv/
+CLAUDE.md
+GEMINI.md
+review.md
+desc.md
